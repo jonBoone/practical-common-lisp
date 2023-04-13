@@ -10,6 +10,12 @@
 (defun add-record (cd)
   (push cd *db*))
 
+(defun artist-selector (artist)
+  #'(lambda (cd) (equal (getf cd :artist) artist)))
+
+(defun delete-rows (selector-fn)
+  (setf *db* (remove-if selector-fn *db*)))
+
 (defun dump-db ()
   (dolist (cd *db*)
     (format t "~{~a:~10t~a~%~}~%" cd)))
@@ -21,6 +27,13 @@
 
 (defun make-cd (title artist rating ripped)
   (list :title title :artist artist :rating rating :ripped ripped))
+
+(defun make-comparison-expr (field value)
+ `(equal (getf cd ,field) ,value))
+
+(defun make-comparisons-list (fields)
+  (loop while fields
+        collecting (make-comparison-expr (pop fields) (pop fields))))
 
 (defun prompt-for-cd ()
   (make-cd
@@ -40,3 +53,20 @@
                        :if-exists :supersede)
     (with-standard-io-syntax
       (print *db* out))))
+
+(defun select (selector-fn)
+  (remove-if-not selector-fn *db*))
+
+(defun update (selector-fn &key title artist rating (ripped nil ripped-p))
+  (setf *db*
+        (mapcar
+         #'(lambda (row)
+             (when (funcall selector-fn row)
+               (if title (setf (getf row :title) title))
+               (if artist (setf (getf row :artist) artist))
+               (if rating (setf (getf row :rating) rating))
+               (if ripped-p (setf (getf row :ripped) ripped)))
+             row) *db*)))
+
+(defmacro where (&rest clauses)
+  `#'(lambda (cd) (and ,@(make-comparisions-list clauses))))
