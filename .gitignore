@@ -11,6 +11,7 @@
 *.dx32fsl
 *.fx64fsl
 *.fx32fsl
+*.sse2f
 *.sx64fsl
 *.sx32fsl
 *.wx64fsl
